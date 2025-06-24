@@ -7,7 +7,13 @@ import (
 )
 
 func main() {
-	
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("➡️  / hit from %s", r.RemoteAddr)
+		jsonResponse(w, map[string]string{
+			"status":  "ok",
+			"message": "Service 1 Root",
+		})
+	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, map[string]string{
