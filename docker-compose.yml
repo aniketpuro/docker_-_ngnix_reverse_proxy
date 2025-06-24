@@ -1,0 +1,57 @@
+version: "3.8"  # Using Docker Compose version 3.8 for compatibility and features
+
+services:
+
+  # ----------------------------------------
+  # 🟦 Service 1 (Golang)
+  # ----------------------------------------
+  service_1:
+    container_name: service_1  # 👈 Custom container name (no project prefix)
+    build:
+      context: ./service_1     # 📁 Build context points to the Go service directory
+    expose:
+      - "8001"                 # 🔓 Exposes port internally (used by nginx)
+    healthcheck:               # ✅ Health check to monitor service health
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    entrypoint: sh -c "echo '[service_1] 🟢 Process started'; ./main"  
+    # 📝 Adds log for process start, then runs compiled Go binary
+
+  # ----------------------------------------
+  # 🟨 Service 2 (Python + Flask)
+  # ----------------------------------------
+  service_2:
+    container_name: service_2  # 👈 Custom container name
+    build:
+      context: ./service_2     # 📁 Build context for Flask service
+    expose:
+      - "8002"                 # 🔓 Exposes port for internal Nginx routing
+    healthcheck:               # ✅ Health check for Flask
+      test: ["CMD", "curl", "-f", "http://localhost:8002/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    entrypoint: sh -c "echo '[service_2] 🟢 Process started'; python3 app.py"
+    # 📝 Logs process start and launches app.py
+
+  # ----------------------------------------
+  # 🔵 Nginx Reverse Proxy
+  # ----------------------------------------
+  nginx:
+    container_name: nginx      # 👈 Custom name to remove prefix
+    build:
+      context: ./nginx         # 📁 Dockerfile + nginx.conf lives here
+    ports:
+      - "8080:80"              # 🌐 Exposes Nginx on host port 8080
+    depends_on:
+      - service_1              # ⏳ Waits for service_1 to start
+      - service_2              # ⏳ Waits for service_2 to start
+    healthcheck:               # ✅ Basic check to verify Nginx is routing
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    entrypoint: sh -c "echo '[nginx] 🟢 Reverse proxy started on port 8080'; nginx -g 'daemon off;'"
+    # 📝 Logs reverse proxy start and keeps Nginx running in foreground
